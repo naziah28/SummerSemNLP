@@ -3,9 +3,28 @@ import json
 import gzip
 import shutil
 import glob 
+import os 
 from langdetect import detect 
 
-def save_authors_df(dataframe, outdir):
+def uncompress_and_delete(dir_path, limit): 
+	train_files = sorted(glob.glob(dir_path+"s2-corpus-*.gz"))
+	print("Found {} files. Reading {}.".format(len(train_files), limit))
+
+	lines = []
+	# Load dataframe for all papers
+	if limit == -1: 
+		limit = len(train_files)-1  
+	for filepath in train_files[:limit]:
+		print("Reading {}".format(filepath))
+		with gzip.open(filepath, 'rb') as f_in:
+			with open(filepath.strip('.gz'), 'wb') as f_out:
+				shutil.copyfileobj(f_in, f_out) 
+		print("removing {}".format(filepath))
+
+		os.remove(filepath)
+
+
+def save_and_get_authors_df(dataframe, outdir):
     df = dataframe
     authors = []
     for i in df.authors:
@@ -20,13 +39,16 @@ def save_authors_df(dataframe, outdir):
     author_df.ids.iloc[:] = author_df.ids.astype(int)
     
     author_df.to_csv(outdir+'authors.csv')
+    return author_df
 
-def get_train_df(dir_path, limit=1, lang='en'):
+def get_train_df(dir_path, limit=-1, lang='en'):
 	train_files = sorted(glob.glob(dir_path+"s2-corpus-*.gz"))
 	print("Found {} files. Reading {}.".format(len(train_files), limit))
 
 	lines = []
-	# Load dataframe for all papers 
+	# Load dataframe for all papers
+	if limit == -1: 
+		limit = len(train_files)-1  
 	for filepath in train_files[:limit]:
 	    print("Reading {}".format(filepath))
 	    with gzip.open(filepath, 'rb') as f_in:
@@ -45,18 +67,25 @@ def get_train_df(dir_path, limit=1, lang='en'):
 	print('read in {}. entities'.format(len(lines)))
 
 	# Create dataframe 
+	print('Creating training DataFrame')
 	train_df = pd.DataFrame.from_dict(lines)
 
-	# remove any entities without abstracts  
+	# remove any entities without abstracts
+	print('Removing null abstracts')  
 	train_df = train_df[train_df.paperAbstract != '']
 
-	# remove any that aren't of language lang: 
+	# remove any that aren't of language lang:
+	print('Only keeping {} language titles'.format(lang)) 
+	train_df = train_df.head(20)
 	train_df = train_df[[detect(i) =='en' for i in train_df.title]]
 
+	print('Complete!')
 	print(train_df.head())
+	print(train_df.shape)
 
 	return train_df
 
-df = get_train_df('data/papers/')
-save_authors_df(df, 'data/papers/')
+uncompress_and_delete('data/papers/', limit=5)
+# df = get_train_df('data/papers/', limit=1)
+# save_authors_df(df, 'data/papers/')
 
