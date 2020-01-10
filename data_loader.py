@@ -47,7 +47,7 @@ def save_df(df, outfile):
 
 
 def get_train_df(dir_path, limit=-1, lang='en'):
-	train_files = sorted(glob.glob(dir_path+"s2-corpus-*.gz"))
+	train_files = sorted(glob.glob(dir_path+"s2-corpus-*"))
 	print("Found {} files. Reading {}.".format(len(train_files), limit))
 
 	lines = []
@@ -56,7 +56,7 @@ def get_train_df(dir_path, limit=-1, lang='en'):
 		limit = len(train_files)-1  
 	for filepath in train_files[:limit]:
 	    print("Reading {}".format(filepath))
-	    with gzip.open(filepath, 'rb') as f_in:
+	    with open(filepath, 'rb') as f_in:
 	        print(f_in)
 
 	        # unzip, but not necessary 
