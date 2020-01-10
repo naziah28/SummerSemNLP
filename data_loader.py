@@ -41,6 +41,11 @@ def save_and_get_authors_df(dataframe, outdir):
     author_df.to_csv(outdir+'authors.csv')
     return author_df
 
+def save_df(df, outfile): 
+    df.to_csv(outfile + ".csv")
+    df.to_parquet(outfile + ".parquet")
+
+
 def get_train_df(dir_path, limit=-1, lang='en'):
 	train_files = sorted(glob.glob(dir_path+"s2-corpus-*.gz"))
 	print("Found {} files. Reading {}.".format(len(train_files), limit))
@@ -83,9 +88,12 @@ def get_train_df(dir_path, limit=-1, lang='en'):
 	print(train_df.head())
 	print(train_df.shape)
 
+	save_df(dir_path + "train_df")
+
 	return train_df
 
-uncompress_and_delete('data/papers/', limit=5)
-# df = get_train_df('data/papers/', limit=1)
+
+# uncompress_and_delete('/media/bigdata/s4431520/data/', limit=5)
+df = get_train_df('/media/bigdata/s4431520/data/', limit=1)
 # save_authors_df(df, 'data/papers/')
 
