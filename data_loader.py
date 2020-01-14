@@ -88,7 +88,7 @@ def get_train_df(dir_path, limit=-1, lang='en'):
 
 # uncompress_and_delete('/media/bigdata/s4431520/data/', limit=5)
 for i in range(18):
-    df = get_train_df('/media/bigdata/s4431520/data/s{}/'.format(i), limit=-1)
+	df = get_train_df('/media/bigdata/s4431520/data/s{}/'.format(i), limit=-1)
 # df = get_train_df('data/papers/', limit=1)
 
 # save_authors_df(df, 'data/papers/')
