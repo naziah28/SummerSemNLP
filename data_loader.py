@@ -54,7 +54,7 @@ def get_train_df(dir_path, limit=-1, lang='en'):
 	lines = []
 	# Load dataframe for all papers
 	if limit == -1: 
-		limit = len(train_files)-1  
+		limit = len(train_files)  
 	for filepath in train_files[:limit]:
 	    print("Reading {}".format(filepath))
 	    with open(filepath, 'rb') as f_in:
@@ -76,8 +76,7 @@ def get_train_df(dir_path, limit=-1, lang='en'):
 
 	# remove any that aren't of language lang:
 	print('Only keeping {} language titles'.format(lang)) 
-	train_df = train_df.head(20)
-	train_df = train_df[[detect(i) =='en' for i in train_df.title]]
+        train_df = train_df[[detect(i) =='en' for i in train_df.title]]
 
 	print('Complete!')
 	print(train_df.head())
@@ -88,8 +87,9 @@ def get_train_df(dir_path, limit=-1, lang='en'):
 
 
 # uncompress_and_delete('/media/bigdata/s4431520/data/', limit=5)
-# df = get_train_df('/media/bigdata/s4431520/data/', limit=1)
-df = get_train_df('data/papers/', limit=1)
+for i in range(18):
+    df = get_train_df('/media/bigdata/s4431520/data/s{}/'.format(i), limit=-1)
+# df = get_train_df('data/papers/', limit=1)
 
 # save_authors_df(df, 'data/papers/')
 
