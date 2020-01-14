@@ -76,7 +76,7 @@ def get_train_df(dir_path, limit=-1, lang='en'):
 
 	# remove any that aren't of language lang:
 	print('Only keeping {} language titles'.format(lang)) 
-        train_df = train_df[[detect(i) =='en' for i in train_df.title]]
+	train_df = train_df[[detect(i) =='en' for i in train_df.title]]
 
 	print('Complete!')
 	print(train_df.head())
