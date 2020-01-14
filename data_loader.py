@@ -42,8 +42,9 @@ def save_and_get_authors_df(dataframe, outdir):
     return author_df
 
 def save_df(df, outfile): 
-    df.to_csv(outfile + ".csv")
-    df.to_parquet(outfile + ".parquet")
+    df.to_csv(outfile + ".csv", compression='gzip')
+
+    df.to_parquet(outfile + ".parquet", compression='gzip')
 
 
 def get_train_df(dir_path, limit=-1, lang='en'):
@@ -57,12 +58,6 @@ def get_train_df(dir_path, limit=-1, lang='en'):
 	for filepath in train_files[:limit]:
 	    print("Reading {}".format(filepath))
 	    with open(filepath, 'rb') as f_in:
-	        print(f_in)
-
-	        # unzip, but not necessary 
-	        # with open(filepath.strip('.gz'), 'wb') as f_out:
-	        #     shutil.copyfileobj(f_in, f_out)
-
 	        for cnt, line in enumerate(f_in):
 	        	try: 
 		            lines.append(json.loads(line))
@@ -86,14 +81,59 @@ def get_train_df(dir_path, limit=-1, lang='en'):
 
 	print('Complete!')
 	print(train_df.head())
-	print(train_df.shape)
 
-	save_df(train_df, dir_path + "train_df")
+	save_df(train_df, dir_path + "preprocessed_df")
 
 	return train_df
 
 
 # uncompress_and_delete('/media/bigdata/s4431520/data/', limit=5)
-df = get_train_df('/media/bigdata/s4431520/data/', limit=1)
+# df = get_train_df('/media/bigdata/s4431520/data/', limit=1)
+df = get_train_df('data/papers/', limit=1)
+
 # save_authors_df(df, 'data/papers/')
+
+
+
+
+# def main(imdir, outdir, _lambda, kappa, beta_max):
+
+#     # load image into array 
+#     tf_img = tf.keras.preprocessing.image.load_img(imdir)
+#     img_arr = np.array(tf_img)
+
+#     # pass image and calculate and output gradient smoothing 
+#     out_img = l0_calc(img_arr, _lambda, kappa, beta_max)
+    
+#     # save image from output array 
+#     im = Image.fromarray(out_img.astype(np.uint8))
+#     im.save(outdir)
+
+
+# if __name__ == '__main__':
+#     parser = argparse.ArgumentParser(description="Semantic Scholar Corpus Data preprocessing")
+#     parser.add_argument("-p", "--raw_gzip", dest="rawdir",
+#                         help="Directory path for input gzip raw data",
+#                         metavar="FILE", default='example/dahlia.png')
+#     parser.add_argument("-d", "--unzipped_data", dest="outdir",
+#                         help="Directory path for output image",
+#                         metavar="FILE", default="example/dahlia_out.png")
+#     parser.add_argument("-l", "--lamdaval", dest="lamdaval",
+#                         help="lambda parameter",
+#                         metavar="FLOAT", default=2e-2)
+#     parser.add_argument("-k", "--kappa", dest="kappa",
+#                         help="kappa parameter",
+#                         metavar="FLOAT", default=2.0)
+#     parser.add_argument("-b", "--beta_max", dest="beta_max",
+#                         help="beta max parameter",
+#                         metavar="FLOAT", default=1e5)
+
+
+#     args = parser.parse_args()
+
+#     main(args.imgdir, 
+#         args.outdir, 
+#         float(args.lamdaval), 
+#         float(args.kappa), 
+#         float(args.beta_max))
 
