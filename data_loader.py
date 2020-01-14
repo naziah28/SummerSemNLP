@@ -88,7 +88,7 @@ def get_train_df(dir_path, limit=-1, lang='en'):
 	print(train_df.head())
 	print(train_df.shape)
 
-	save_df(dir_path + "train_df")
+	save_df(train_df, dir_path + "train_df")
 
 	return train_df
 
