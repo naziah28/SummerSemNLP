@@ -74,24 +74,23 @@ def load_and_save_to_df(dir_path, limit=10, reps=-1):
 
 	train_files_indexed = np.array(train_files)
 	num_splits = np.ceil(train_files_indexed.shape[0]/limit)
-	train_files_indexed = np.array_split(x, num_splits)
+	train_files_indexed = np.array_split(train_files_indexed, num_splits)
 
 	train_files_indexed = train_files_indexed[:reps]
 
 	print(train_files_indexed)
+	print(reps)
 
 	for rep in range(reps): 
-
-			lines = []
-
-		for idx, filepath in enumerate(train_files[rep][:limit]):
-		    print("Reading {}".format(filepath))
-		    with open(filepath, 'rb') as f_in:
-		        for cnt, line in enumerate(f_in):
-		        	try: 
-			            lines.append(json.loads(line))
-			        except: # any line errors 
-			        	pass 
+		lines = []
+		for idx, filepath in enumerate(train_files_indexed[rep][:limit]):
+			print("Reading {}".format(filepath))
+			with open(filepath, 'rb') as f_in:
+				for cnt, line in enumerate(f_in):
+					try: 
+						lines.append(json.loads(line))
+					except: # any line errors 
+						pass 
 
 		print('read in {}. entities'.format(len(lines)))
 
@@ -100,7 +99,8 @@ def load_and_save_to_df(dir_path, limit=10, reps=-1):
 		df = pd.DataFrame.from_dict(lines)
 
 		df = preprocess_df(df)
-		df.to_csv("preprocess_df_{}_{}.csv".format(rep, idx))
+		saveto = "{}preprocessed_df_rep{}.csv".format(dir_path, rep)
+		df.to_csv(saveto, compression='gzip')
 
 
 
@@ -120,13 +120,14 @@ def preprocess_df(df):
 	# df = df[[detect(i) =='en' for i in df.title]]
 
 	print('Completed preprocessing')
+	print(df.head())
 	return df
 
 
 # uncompress_and_delete('/media/bigdata/s4431520/data/', limit=5)
 # for i in range(18):
 # 	df = get_train_df('/media/bigdata/s4431520/data/s{}/'.format(i), limit=-1)
-df = load_and_save_to_df('data/papers/', limit=2)
+df = load_and_save_to_df('/media/bigdata/s4431520/data/', limit=1, reps=1)
 # df = preprocess_df(df)
 # save_df(df, "data/papers/preprocessed_df")
 
@@ -136,7 +137,7 @@ def main(datadir, outdir, unzip, deletezip):
 	if unzip: 
 		uncompress_and_delete(datadir, deletezip)
 
-	df = load_to_df(datadir, limit=2)
+	df = load_to_df(datadir, limit=2, reps=1)
 	df = preprocess_df
 	save_df(df)
 
