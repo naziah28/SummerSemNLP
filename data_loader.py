@@ -1,10 +1,33 @@
 import pandas as pd 
+import numpy as np
 import json
 import gzip
 import shutil
 import glob 
 import os 
+import math 
 from langdetect import detect 
+
+JOURNALS = ["Advanced Materials",
+"IEEE/CVF Conference on Computer Vision and Pattern Recognition",
+"Energy & Environmental Science",
+"ACS Nano",
+"Nano Letters",
+"Nature Materials",
+"Renewable and Sustainable Energy Reviews",
+"Neural Information Processing Systems (NIPS)",
+"Journal of Materials Chemistry. A",
+"Nature Nanotechnology",
+"Advanced Functional Materials",
+"Advanced Energy Materials",
+"International Conference on Learning Representations",
+"Nature Photonics",
+"ACS Applied Materials & Interfaces",
+"Chemistry of Materials",
+"Nanoscale",
+"European Conference on Computer Vision",
+"International Conference on Machine Learning (ICML)",
+"Journal of Cleaner Production"]
 
 def uncompress_and_delete(dir_path, limit): 
 	train_files = sorted(glob.glob(dir_path+"s2-corpus-*.gz"))
@@ -41,99 +64,105 @@ def save_and_get_authors_df(dataframe, outdir):
     author_df.to_csv(outdir+'authors.csv')
     return author_df
 
-def save_df(df, outfile): 
-    df.to_csv(outfile + ".csv", compression='gzip')
 
-    df.to_parquet(outfile + ".parquet", compression='gzip')
-
-
-def get_train_df(dir_path, limit=-1, lang='en'):
+def load_and_save_to_df(dir_path, limit=10, reps=-1):
 	train_files = sorted(glob.glob(dir_path+"s2-corpus-*"))
 	print("Found {} files. Reading {}.".format(len(train_files), limit))
 
-	lines = []
-	# Load dataframe for all papers
-	if limit == -1: 
-		limit = len(train_files)  
-	for filepath in train_files[:limit]:
-	    print("Reading {}".format(filepath))
-	    with open(filepath, 'rb') as f_in:
-	        for cnt, line in enumerate(f_in):
-	        	try: 
-		            lines.append(json.loads(line))
-		        except: # any line errors 
-		        	pass 
+	if reps == -1: 
+		reps = math.ceil(len(train_files)/limit)
 
-	print('read in {}. entities'.format(len(lines)))
+	train_files_indexed = np.array(train_files)
+	num_splits = np.ceil(train_files_indexed.shape[0]/limit)
+	train_files_indexed = np.array_split(x, num_splits)
 
-	# Create dataframe 
-	print('Creating training DataFrame')
-	train_df = pd.DataFrame.from_dict(lines)
+	train_files_indexed = train_files_indexed[:reps]
+
+	print(train_files_indexed)
+
+	for rep in range(reps): 
+
+			lines = []
+
+		for idx, filepath in enumerate(train_files[rep][:limit]):
+		    print("Reading {}".format(filepath))
+		    with open(filepath, 'rb') as f_in:
+		        for cnt, line in enumerate(f_in):
+		        	try: 
+			            lines.append(json.loads(line))
+			        except: # any line errors 
+			        	pass 
+
+		print('read in {}. entities'.format(len(lines)))
+
+		# Create dataframe 
+		print('Creating training DataFrame')
+		df = pd.DataFrame.from_dict(lines)
+
+		df = preprocess_df(df)
+		df.to_csv("preprocess_df_{}_{}.csv".format(rep, idx))
+
+
+
+def preprocess_df(df):
 
 	# remove any entities without abstracts
 	print('Removing null abstracts')  
-	train_df = train_df[train_df.paperAbstract != '']
+	df = df[df.paperAbstract != '']
+
+	# remove all non comp sci papers
+	# DBLP (compsci bibliography): https://dblp.uni-trier.de/
+	df = df[df.sources == "['DBLP']"]
 
 	# remove any that aren't of language lang:
-	print('Only keeping {} language titles'.format(lang)) 
-	train_df = train_df[[detect(i) =='en' for i in train_df.title]]
+	# dont need since assume DBLP is english  (??) 
+	# print('Only keeping {} language titles'.format(lang)) 
+	# df = df[[detect(i) =='en' for i in df.title]]
 
-	print('Complete!')
-	print(train_df.head())
-
-	save_df(train_df, dir_path + "preprocessed_df")
-
-	return train_df
+	print('Completed preprocessing')
+	return df
 
 
 # uncompress_and_delete('/media/bigdata/s4431520/data/', limit=5)
-for i in range(18):
-	df = get_train_df('/media/bigdata/s4431520/data/s{}/'.format(i), limit=-1)
-# df = get_train_df('data/papers/', limit=1)
-
-# save_authors_df(df, 'data/papers/')
-
-
+# for i in range(18):
+# 	df = get_train_df('/media/bigdata/s4431520/data/s{}/'.format(i), limit=-1)
+df = load_and_save_to_df('data/papers/', limit=2)
+# df = preprocess_df(df)
+# save_df(df, "data/papers/preprocessed_df")
 
 
-# def main(imdir, outdir, _lambda, kappa, beta_max):
 
-#     # load image into array 
-#     tf_img = tf.keras.preprocessing.image.load_img(imdir)
-#     img_arr = np.array(tf_img)
+def main(datadir, outdir, unzip, deletezip):
+	if unzip: 
+		uncompress_and_delete(datadir, deletezip)
 
-#     # pass image and calculate and output gradient smoothing 
-#     out_img = l0_calc(img_arr, _lambda, kappa, beta_max)
-    
-#     # save image from output array 
-#     im = Image.fromarray(out_img.astype(np.uint8))
-#     im.save(outdir)
+	df = load_to_df(datadir, limit=2)
+	df = preprocess_df
+	save_df(df)
+
 
 
 # if __name__ == '__main__':
 #     parser = argparse.ArgumentParser(description="Semantic Scholar Corpus Data preprocessing")
-#     parser.add_argument("-p", "--raw_gzip", dest="rawdir",
-#                         help="Directory path for input gzip raw data",
+#     parser.add_argument("-d", "--datadir", dest="rawdir",
+#                         help="Directory path for input data (unzipped or zipped)",
 #                         metavar="FILE", default='example/dahlia.png')
-#     parser.add_argument("-d", "--unzipped_data", dest="outdir",
-#                         help="Directory path for output image",
+#     parser.add_argument("-o", "--outdir", dest="outdir",
+#                         help="Directory path for output dataframe",
 #                         metavar="FILE", default="example/dahlia_out.png")
-#     parser.add_argument("-l", "--lamdaval", dest="lamdaval",
-#                         help="lambda parameter",
+#     parser.add_argument("-u", "--unzip", dest="unzip",
+#                         help="if files in datadir need to be unzipped",
 #                         metavar="FLOAT", default=2e-2)
-#     parser.add_argument("-k", "--kappa", dest="kappa",
-#                         help="kappa parameter",
+#     parser.add_argument("-r", "--deletezip", dest="deletezip",
+#                         help="if zipped files in datadir are to be deleted \
+#                         (due to storage constraints)",
 #                         metavar="FLOAT", default=2.0)
-#     parser.add_argument("-b", "--beta_max", dest="beta_max",
-#                         help="beta max parameter",
-#                         metavar="FLOAT", default=1e5)
 
 
 #     args = parser.parse_args()
 
-#     main(args.imgdir, 
+#     main(args.datadir, 
 #         args.outdir, 
-#         float(args.lamdaval), 
-#         float(args.kappa), 
-#         float(args.beta_max))
+#         float(args.unzip), 
+#         float(args.deletezip))
 
