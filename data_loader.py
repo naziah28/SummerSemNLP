@@ -84,10 +84,11 @@ def load_and_save_to_df(dir_path, limit=10, reps=-1):
 	for rep in range(reps): 
 		lines = []
 		for idx, filepath in enumerate(train_files_indexed[rep][:limit]):
-			print("Reading {}".format(filepath))
 			
 			try: # Sometimes errors out on the filepath for some reason 
 				with open(filepath, 'rb') as f_in:
+					print("Reading {}".format(filepath))
+
 					for cnt, line in enumerate(f_in):
 						try: 
 							lines.append(json.loads(line))
