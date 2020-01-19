@@ -93,13 +93,14 @@ def load_and_save_to_df(dir_path, limit=10, reps=-1):
 						pass 
 
 		print('read in {}. entities'.format(len(lines)))
-		csvpath = "{}preprocessed_df.csv".format(dir_path)
-		df.to_csv(saveto, compression='gzip')
+		csvpath = "{}raw_df.csv".format(dir_path)
 
 
 		# Create dataframe 
 		print('Creating training DataFrame')
 		df = pd.DataFrame.from_dict(lines)
+		df.to_csv(csvpath, compression='gzip')
+
 
 		df = preprocess_df(df)
 		saveto = "{}preprocessed_df_rep{}.csv".format(dir_path, rep)
