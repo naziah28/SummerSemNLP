@@ -85,12 +85,16 @@ def load_and_save_to_df(dir_path, limit=10, reps=-1):
 		lines = []
 		for idx, filepath in enumerate(train_files_indexed[rep][:limit]):
 			print("Reading {}".format(filepath))
-			with open(filepath, 'rb') as f_in:
-				for cnt, line in enumerate(f_in):
-					try: 
-						lines.append(json.loads(line))
-					except: # any line errors 
-						pass 
+			
+			try: # Sometimes errors out on the filepath for some reason 
+				with open(filepath, 'rb') as f_in:
+					for cnt, line in enumerate(f_in):
+						try: 
+							lines.append(json.loads(line))
+						except: # any line errors 
+							pass 
+			except: 
+				pass 
 
 		print('read in {}. entities'.format(len(lines)))
 		csvpath = "{}raw_df.csv".format(dir_path)
@@ -131,7 +135,7 @@ def preprocess_df(df):
 # uncompress_and_delete('/media/bigdata/s4431520/data/', limit=5)
 # for i in range(18):
 # 	df = get_train_df('/media/bigdata/s4431520/data/s{}/'.format(i), limit=-1)
-df = load_and_save_to_df('/media/bigdata/s4431520/data/', limit=1, reps=1)
+df = load_and_save_to_df('/media/bigdata/s4431520/data/', limit=10, reps=1)
 # df = preprocess_df(df)
 # save_df(df, "data/papers/preprocessed_df")
 
