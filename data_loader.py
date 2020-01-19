@@ -29,14 +29,14 @@ JOURNALS = ["Advanced Materials",
 "International Conference on Machine Learning (ICML)",
 "Journal of Cleaner Production"]
 
-def uncompress_and_delete(dir_path, limit): 
+def uncompress_and_delete(dir_path, limit=-1): 
 	train_files = sorted(glob.glob(dir_path+"s2-corpus-*.gz"))
 	print("Found {} files. Reading {}.".format(len(train_files), limit))
 
 	lines = []
 	# Load dataframe for all papers
 	if limit == -1: 
-		limit = len(train_files)-1  
+		limit = len(train_files)  
 	for filepath in train_files[:limit]:
 		print("Reading {}".format(filepath))
 		with gzip.open(filepath, 'rb') as f_in:
@@ -93,7 +93,7 @@ def load_and_save_to_df(dir_path, limit=10, reps=-1):
 						pass 
 
 		print('read in {}. entities'.format(len(lines)))
-		csvpath = "{}raw_df.csv".format(dir_path)
+		csvpath = "{}raw_df_rep{}.csv".format(dir_path, rep)
 
 
 		# Create dataframe 
@@ -128,10 +128,10 @@ def preprocess_df(df):
 	return df
 
 
-# uncompress_and_delete('/media/bigdata/s4431520/data/', limit=5)
+# uncompress_and_delete('/media/bigdata/s4431520/data/zipped/', limit=-1)
 # for i in range(18):
 # 	df = get_train_df('/media/bigdata/s4431520/data/s{}/'.format(i), limit=-1)
-df = load_and_save_to_df('/media/bigdata/s4431520/data/', limit=1, reps=1)
+df = load_and_save_to_df('/media/bigdata/s4431520/data/', limit=10, reps=1)
 # df = preprocess_df(df)
 # save_df(df, "data/papers/preprocessed_df")
 
