@@ -104,7 +104,7 @@ def load_and_save_to_df(dir_path, limit=10, reps=-1):
 		# Create dataframe 
 		print('Creating training DataFrame')
 		df = pd.DataFrame.from_dict(lines)
-		df.to_csv(csvpath, compression='gzip')
+		# df.to_csv(csvpath, compression='gzip')
 
 
 		df = preprocess_df(df)
@@ -121,8 +121,12 @@ def preprocess_df(df):
 
 	# remove all non comp sci papers
 	# DBLP (compsci bibliography): https://dblp.uni-trier.de/
-	df = df[df.sources == "['DBLP']"]
 
+	# this line below is not reliable, assumes that sources is a 
+	# list of only one element
+	df["sources_parsed"] = [i[0] if len(i)>0 else "" for i in df.sources]
+	df = df[df.sources_parsed == 'DBLP']
+	
 	# remove any that aren't of language lang:
 	# dont need since assume DBLP is english  (??) 
 	# print('Only keeping {} language titles'.format(lang)) 
