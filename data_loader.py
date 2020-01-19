@@ -29,6 +29,10 @@ JOURNALS = ["Advanced Materials",
 "International Conference on Machine Learning (ICML)",
 "Journal of Cleaner Production"]
 
+COLUMNS = ['entities', 'year', 'outCitations', 
+'id', 'authors', 'journalName', 'paperAbstract', 
+'inCitations', 'title', 'doi', 'venue']
+
 def uncompress_and_delete(dir_path, limit): 
 	train_files = sorted(glob.glob(dir_path+"s2-corpus-*.gz"))
 	print("Found {} files. Reading {}.".format(len(train_files), limit))
@@ -112,7 +116,7 @@ def load_and_save_to_df(dir_path, limit=10, reps=-1):
 		df.to_csv(saveto, compression='gzip')
 
 
-def combine_preprocessed_df(datadir):
+def combine_preprocessed_df(dir_path):
 	preprocessed_files = sorted(glob.glob(dir_path+"preprocessed_df_rep*.csv"))
 	print("Found {} files. Reading {}.".format(len(preprocessed_files), limit))
 
@@ -155,9 +159,6 @@ def preprocess_df(df):
 	return df
 
 
-# uncompress_and_delete('/media/bigdata/s4431520/data/', limit=5)
-
-# df = load_and_save_to_df('/media/bigdata/s4431520/data/', limit=10, reps=1)
 
 df = combine_preprocessed_df('/media/bigdata/s4431520/data/')
 df = index_important_columns(df, COLUMNS)
