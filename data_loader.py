@@ -106,9 +106,9 @@ def load_and_save_to_df(dir_path, limit=10, reps=-1):
 		df.to_csv(csvpath, compression='gzip')
 
 
-		df = preprocess_df(df)
-		saveto = "{}preprocessed_df_rep{}.csv".format(dir_path, rep)
-		df.to_csv(saveto, compression='gzip')
+		# df = preprocess_df(df)
+		# saveto = "{}preprocessed_df_rep{}.csv".format(dir_path, rep)
+		# df.to_csv(saveto, compression='gzip')
 
 
 
@@ -135,7 +135,7 @@ def preprocess_df(df):
 # uncompress_and_delete('/media/bigdata/s4431520/data/zipped/', limit=-1)
 # for i in range(18):
 # 	df = get_train_df('/media/bigdata/s4431520/data/s{}/'.format(i), limit=-1)
-df = load_and_save_to_df('/media/bigdata/s4431520/data/', limit=10, reps=1)
+df = load_and_save_to_df('/media/bigdata/s4431520/data/', limit=5, reps=-1)
 # df = preprocess_df(df)
 # save_df(df, "data/papers/preprocessed_df")
 
