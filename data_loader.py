@@ -112,6 +112,29 @@ def load_and_save_to_df(dir_path, limit=10, reps=-1):
 		# df.to_csv(saveto, compression='gzip')
 
 
+def combine_preprocessed_df(datadir):
+	preprocessed_files = sorted(glob.glob(dir_path+"preprocessed_df_rep*.csv"))
+	print("Found {} files. Reading {}.".format(len(preprocessed_files), limit))
+
+	df_p = []
+
+	for file in preprocessed_files: 
+		df_p.append(pd.read_csv(file))
+
+	df = pd.concat(df_p) 
+	return df 
+
+def index_important_columns(df, cols): 
+	df = df[cols]
+	return df 
+
+def filter_language(df, lang='en'): 
+	# remove any that aren't of language lang:
+	# dont need since assume DBLP is english  (??) 
+	# print('Only keeping {} language titles'.format(lang)) 
+	df = df[[detect(i) =='en' for i in df.title]]
+	return df 
+
 
 def preprocess_df(df):
 
@@ -127,22 +150,29 @@ def preprocess_df(df):
 	df["sources_parsed"] = [i[0] if len(i)>0 else "" for i in df.sources]
 	df = df[df.sources_parsed == 'DBLP']
 	
-	# remove any that aren't of language lang:
-	# dont need since assume DBLP is english  (??) 
-	# print('Only keeping {} language titles'.format(lang)) 
-	# df = df[[detect(i) =='en' for i in df.title]]
-
 	print('Completed preprocessing')
 	print(df.head())
 	return df
 
 
+
 # uncompress_and_delete('/media/bigdata/s4431520/data/zipped/', limit=-1)
 # for i in range(18):
 # 	df = get_train_df('/media/bigdata/s4431520/data/s{}/'.format(i), limit=-1)
-df = load_and_save_to_df('/media/bigdata/s4431520/data/', limit=5, reps=-1)
+
 # df = preprocess_df(df)
 # save_df(df, "data/papers/preprocessed_df")
+
+# uncompress_and_delete('/media/bigdata/s4431520/data/', limit=5)
+
+# df = load_and_save_to_df('/media/bigdata/s4431520/data/', limit=10, reps=1)
+
+df = combine_preprocessed_df('/media/bigdata/s4431520/data/')
+df = index_important_columns(df, COLUMNS)
+df = filter_language(df)
+pd.to_csv('/media/bigdata/s4431520/data/corpus_dataset_preprocessed.csv')
+
+
 
 
 
