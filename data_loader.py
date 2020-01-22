@@ -1,4 +1,5 @@
-import pandas as pd 
+import pandas as pd
+import dask.dataframe as dd 
 import numpy as np
 import json
 import gzip
@@ -34,38 +35,44 @@ COLUMNS = ['entities', 'year', 'outCitations',
 'id', 'authors', 'journalName', 'paperAbstract', 
 'inCitations', 'title', 'doi', 'venue']
 
-def uncompress_and_delete(dir_path, limit=-1): 
+def uncompress_source_data(dir_path, delete=False, limit=-1): 
+    train_files = sorted(glob.glob(dir_path+"s2-corpus-*.gz"))
+    print("Found {} files. Reading {}.".format(len(train_files), limit))
 
-	train_files = sorted(glob.glob(dir_path+"s2-corpus-*.gz"))
-	print("Found {} files. Reading {}.".format(len(train_files), limit))
-
-	lines = []
-	# Load dataframe for all papers
-	if limit == -1: 
-		limit = len(train_files)  
-	for filepath in train_files[:limit]:
-		print("Reading {}".format(filepath))
-		with gzip.open(filepath, 'rb') as f_in:
-			with open(filepath.strip('.gz'), 'wb') as f_out:
-				shutil.copyfileobj(f_in, f_out) 
-		print("removing {}".format(filepath))
-
-		os.remove(filepath)
-
-
-def save_and_get_authors_df(dataframe, outdir):
-    df = dataframe
-    authors = []
-    for i in df.authors:
-        authors.extend(i)
+    lines = []
+    # Load dataframe for all papers
+    if limit == -1: 
+        limit = len(train_files)  
+    for filepath in train_files[:limit]:
+        print("Reading {}".format(filepath))
+        with gzip.open(filepath, 'rb') as f_in:
+            with open(filepath.strip('.gz'), 'wb') as f_out:
+                shutil.copyfileobj(f_in, f_out) 
+        print("removing {}".format(filepath))
         
+        if delete: 
+            os.remove(filepath)
+
+
+def save_and_get_authors_df(df, outdir):
+    authors = []
+    for i in df.authors: 
+        string_dict = i.replace("'", '"')
+        try: 
+            author_dict = json.loads(string_dict)
+            authors.extend(author_dict)
+        except: # since i replace ' with ", this impaces names with ' in them
+            pass
+
     author_df = pd.DataFrame.from_dict(authors)
-    
-    author_df = author_df.dropna(subset=['ids'])
-    author_df.ids = author_df.ids.str[0]
-    
     author_df = author_df.dropna() # probably unnecessary 
-    author_df.ids.iloc[:] = author_df.ids.astype(int)
+    
+    print(author_df.head())
+    
+    # Convert id list to string and remove duplicates 
+    author_df["ids"] = author_df.ids.astype(str)    
+    author_df = author_df[~author_df.duplicated()]
+    df = df.reset_index(drop=True)
     
     author_df.to_csv(outdir+'authors.csv')
     return author_df
@@ -110,88 +117,77 @@ def load_and_save_to_df(dir_path, limit=10, reps=-1):
 		# Create dataframe 
 		print('Creating training DataFrame')
 		df = pd.DataFrame.from_dict(lines)
-		# df.to_csv(csvpath, compression='gzip')
 
 
-		# df = preprocess_df(df)
-		# saveto = "{}preprocessed_df_rep{}.csv".format(dir_path, rep)
-		# df.to_csv(saveto, compression='gzip')
+		df = preprocess_df(df)
+		saveto = "{}preprocessed_df_rep{}.csv".format(dir_path, rep)
+		df.to_csv(saveto, compression='gzip')
 
 
 def combine_preprocessed_df(dir_path):
-	preprocessed_files = sorted(glob.glob(dir_path+"preprocessed_df_rep*.csv"))
-	print("Found {} files.".format(len(preprocessed_files)))
+    preprocessed_files = sorted(glob.glob(dir_path+"preprocessed_df_rep*.csv"))
+    print("Found {} files.".format(len(preprocessed_files)))
 
-	df_p = []
+    df_p = []
 
-	for file in preprocessed_files: 
-		df_p.append(pd.read_csv(file, compression='gzip'))
+    for file in preprocessed_files: 
+        print("Reading {}".format(file))
+        df_p.append(dd.read_csv(file, compression='gzip', engine='python', blocksize=None, dtype={'Unnamed: 0': 'object',
+       'year': 'object'}))
 
-	df = pd.concat(df_p) 
-	return df 
+    df = dd.concat(df_p) 
+    return df 
 
-def index_important_columns(df, cols): 
-	df = df[cols]
-	return df 
+def index_important_columns(df, cols=COLUMNS): 
+    df = df[cols]
+    return df 
 
 def filter_language(df, lang='en'): 
-	# remove any that aren't of language lang:
-	# dont need since assume DBLP is english  (??) 
-	# print('Only keeping {} language titles'.format(lang)) 
-	df = df[[detect(i) =='en' for i in df.title]]
-	return df 
+    # remove any that aren't of language lang:
+    # dont need since assume DBLP is english  (??) 
+    # print('Only keeping {} language titles'.format(lang)) 
+    df = df[[detect(i) =='en' for i in df.title]]
+    return df 
 
 
 def preprocess_df(df):
 
-	# remove any entities without abstracts
-	print('Removing null abstracts')  
-	df = df[df.paperAbstract != '']
+    # remove any entities without abstracts
+    print('Removing null abstracts')  
+    df = df[df.paperAbstract != '']
 
-	# remove all non comp sci papers
-	# DBLP (compsci bibliography): https://dblp.uni-trier.de/
+    # remove all non comp sci papers
+    # DBLP (compsci bibliography): https://dblp.uni-trier.de/
 
-	# this line below is not reliable, assumes that sources is a 
-	# list of only one element
-	df["sources_parsed"] = [i[0] if len(i)>0 else "" for i in df.sources]
-	df = df[df.sources_parsed == 'DBLP']
-	
-	print('Completed preprocessing')
-	print(df.head())
-	return df
-
-
+    # this line below is not reliable, assumes that sources is a 
+    # list of only one element
+    df["sources_parsed"] = [i[0] if len(i)>0 else "" for i in df.sources]
+    df = df[df.sources_parsed == 'DBLP']
+    
+    print('Completed preprocessing')
+    print(df.head())
+    return df
 
 
-# uncompress_and_delete('/media/bigdata/s4431520/data/zipped/', limit=-1)
-# for i in range(18):
-# 	df = get_train_df('/media/bigdata/s4431520/data/s{}/'.format(i), limit=-1)
 
+
+# uncompress_source_data('/media/bigdata/s4431520/data/zipped/', delete=True, limit=-1)
+# df = load_and_save_to_df('/media/bigdata/s4431520/data/', limit=10, reps=-1)
 # df = preprocess_df(df)
-# save_df(df, "data/papers/preprocessed_df")
-
-# uncompress_and_delete('/media/bigdata/s4431520/data/', limit=5)
-
-# df = load_and_save_to_df('/media/bigdata/s4431520/data/', limit=10, reps=1)
-
-
-
-df = combine_preprocessed_df('/media/bigdata/s4431520/data/')
-df = index_important_columns(df, COLUMNS)
-df = filter_language(df)
-pd.to_csv('/media/bigdata/s4431520/data/corpus_dataset_preprocessed.csv')
+# df = combine_preprocessed_df('/media/bigdata/s4431520/data/')
+# df = index_important_columns(df, COLUMNS)
 
 
 
 
 
 def main(datadir, outdir, unzip, deletezip):
-	if unzip: 
-		uncompress_and_delete(datadir, deletezip)
+    if unzip: 
+        uncompress_and_delete(datadir, deletezip)
 
-	df = load_to_df(datadir, limit=2, reps=1)
-	df = preprocess_df
-	save_df(df)
+    df = load_to_df(datadir, limit=2, reps=1)
+    df = preprocess_df
+    save_df(df)
 
 
 
